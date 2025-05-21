@@ -21,10 +21,11 @@ float kecepatanRobot = 0.58;
 float jariJariRobot = 3.5;
 
 //mapping
-int dataMap[15];
+int dataMap[16];
 
 int iServo = 0;
 bool scanState = true;
+bool servoDirection = true;
 
 void setup() {
 Serial.begin(9600);
@@ -43,7 +44,6 @@ pinMode(enL, OUTPUT);
 servoMapping.attach(8);
 servoMapping.write(0);
 }
-bool state = true;
 
 void loop() {
 
@@ -55,20 +55,42 @@ void otonomMode() {
 
   if (scanState) {
 
-    for(iServo; iServo < 15; iServo++) {
-      mapping(iServo);
+    if (servoDirection) {
+      for(iServo; iServo < 15; iServo++) {
+        mapping(iServo);
+
+        if (hcM = x) {
+          stop();
+        }
+      }
+
+      for (int i = 0; i < 15; i++) {
+        Serial.print("Data ke-");
+        Serial.print(i + 1);
+        Serial.print(": ");
+        Serial.println(dataMap[i]);
+      }
+
+      servoDirection = false;
+
+      scanState = false;
+    } else {
+      for(iServo; iServo > 0; iServo--) {
+        mapping(iServo - 1);
+      }
+
+      for (int i = 15; i > 0; i--) {
+        Serial.print("Data ke-");
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(dataMap[i - 1]);
+      }
+
+      servoDirection = true;
+
+      scanState = false;
     }
 
-    for (int i = 0; i < 15; i++) {
-      Serial.print("Data ke-");
-      Serial.print(i + 1);
-      Serial.print(": ");
-      Serial.println(dataMap[i]);
-    }
-
-    iServo = 0;
-    servoMapping.write(0);
-    scanState = false;
 
   } else {
     int panjangData = sizeof(dataMap) / sizeof(dataMap[0]);
@@ -82,11 +104,11 @@ void otonomMode() {
       }
     }
 
-    if (dataMap[5] >= 3000) {
+    if (dataMap[8] >= 300) {
         forward(rPwm, lPwm);
         scanState = true;
     } else {
-      if (maxNilai >= 3000) {
+      if (maxNilai >= 300) {
         int normalizeDegree;
         int normalizeDirection;
 
@@ -112,7 +134,6 @@ void mapping(int index) {
   servoMapping.write((index * 12));
   int range = lidar1.readRangeSingleMillimeters();
   dataMap[index] = range;
-  delay(60);
 }
 
 void decisionMove(int de, int di) {
@@ -122,28 +143,40 @@ void decisionMove(int de, int di) {
   float waktuTempuhSempurna = 0.38; // s
   float waktutPutarTarget = (targetDegree / 360) * 500; // mils
 
-  if (direction > 0) {
-    left(rPwm, lPwm);
-    Serial.print("kiri");
-    Serial.println(targetDegree);
-    Serial.println(waktutPutarTarget);
-    delay(waktutPutarTarget);
+  if (hcM = x) {
     stop();
-    scanState = true;
-  } else if (direction < 0) {
-    right(rPwm, lPwm);
-    Serial.print("kanan");
-    Serial.println(targetDegree);
-    Serial.println(waktutPutarTarget);
-    delay(waktutPutarTarget);
-    stop();
-    scanState = true;
-  } else if (targetDegree == 0) {
-    Serial.print("lurus");
-    Serial.println(targetDegree);
-    forward(rPwm, lPwm);
-    scanState = true;
+  } else {
+    if (direction > 0) {
+      left(rPwm, lPwm);
+      Serial.print("kiri");
+      Serial.println(targetDegree);
+      Serial.println(waktutPutarTarget);
+      delay(waktutPutarTarget);
+      stop();
+    } else if (direction < 0) {
+      right(rPwm, lPwm);
+      Serial.print("kanan");
+      Serial.println(targetDegree);
+      Serial.println(waktutPutarTarget);
+      delay(waktutPutarTarget);
+      stop();
+    } else if (targetDegree == 0) {
+      Serial.print("lurus");
+      Serial.println(targetDegree);
+      forward(rPwm, lPwm);
+    }
   }
+
+  scanState = true;
+
+}
+
+void decisionStop() {
+  float hcR =;
+  float hcM =;
+  float hcL =;
+
+  if (hcR)
 }
 
 void forward(float rPwm, int lPwm) {
