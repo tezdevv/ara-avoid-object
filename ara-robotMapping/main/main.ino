@@ -13,7 +13,11 @@ VL53L0X lidar1;
 #define l2 3
 #define enL 5
 
-float rPwm = 89.5;
+#define pinHcL 9
+#define pinHcM 10
+#define pinHcR 11
+
+float rPwm = 88.5;
 int lPwm = 81;
 
 //spesifikasi
@@ -21,11 +25,15 @@ float kecepatanRobot = 0.58;
 float jariJariRobot = 3.5;
 
 //mapping
-int dataMap[16];
+float dataMap[16];
 
 int iServo = 0;
 bool scanState = true;
 bool servoDirection = true;
+
+long hcR = 6;
+long hcM = 6;
+long hcL = 6;
 
 void setup() {
 Serial.begin(9600);
@@ -43,11 +51,17 @@ pinMode(enL, OUTPUT);
 
 servoMapping.attach(8);
 servoMapping.write(0);
+
+pinMode(pinHcL, OUTPUT);
+pinMode(pinHcM, OUTPUT);
+pinMode(pinHcR, OUTPUT);
 }
 
 void loop() {
 
   otonomMode();
+
+  // robot scan jika hc deteksi benda depan
 
 }
 
@@ -56,12 +70,11 @@ void otonomMode() {
   if (scanState) {
 
     if (servoDirection) {
+      servoMapping.write(0);
+      delay(20);
+
       for(iServo; iServo < 15; iServo++) {
         mapping(iServo);
-
-        if (hcM = x) {
-          stop();
-        }
       }
 
       for (int i = 0; i < 15; i++) {
@@ -75,8 +88,11 @@ void otonomMode() {
 
       scanState = false;
     } else {
+      servoMapping.write(180);
+      delay(20);
+
       for(iServo; iServo > 0; iServo--) {
-        mapping(iServo - 1);
+        mapping(iServo - 1);      
       }
 
       for (int i = 15; i > 0; i--) {
@@ -93,9 +109,9 @@ void otonomMode() {
 
 
   } else {
-    int panjangData = sizeof(dataMap) / sizeof(dataMap[0]);
-    int maxNilai = dataMap[0];
-    int maxIndex = 0;
+    float panjangData = sizeof(dataMap) / sizeof(dataMap[0]);
+    float maxNilai = dataMap[0];
+    float maxIndex = 0;
 
     for (int i = 1; i < panjangData; i++) {
       if (dataMap[i] > maxNilai) {
@@ -104,11 +120,10 @@ void otonomMode() {
       }
     }
 
-    if (dataMap[8] >= 300) {
-        forward(rPwm, lPwm);
-        scanState = true;
+    if (dataMap[8] >= 400) {
+        decisionMove(0, 0);
     } else {
-      if (maxNilai >= 300) {
+      if (maxNilai >= 400) {
         int normalizeDegree;
         int normalizeDirection;
 
@@ -132,51 +147,49 @@ void otonomMode() {
 
 void mapping(int index) {
   servoMapping.write((index * 12));
-  int range = lidar1.readRangeSingleMillimeters();
+  float range = (lidar1.readRangeSingleMillimeters())/1000;
   dataMap[index] = range;
+  delay(40);
 }
 
 void decisionMove(int de, int di) {
   float direction = di;
   float targetDegree = de;
-  float lingkarRobot = 0.22;
-  float waktuTempuhSempurna = 0.38; // s
-  float waktutPutarTarget = (targetDegree / 360) * 500; // mils
+  float waktutPutarTarget = (targetDegree / 360) * 284; // mils
 
-  if (hcM = x) {
+  if (direction > 0) {
+    left(rPwm, lPwm);
+    Serial.print("kiri");
+    Serial.println(targetDegree);
+    Serial.println(waktutPutarTarget);
+    delay(waktutPutarTarget);
     stop();
-  } else {
-    if (direction > 0) {
-      left(rPwm, lPwm);
-      Serial.print("kiri");
-      Serial.println(targetDegree);
-      Serial.println(waktutPutarTarget);
-      delay(waktutPutarTarget);
-      stop();
-    } else if (direction < 0) {
-      right(rPwm, lPwm);
-      Serial.print("kanan");
-      Serial.println(targetDegree);
-      Serial.println(waktutPutarTarget);
-      delay(waktutPutarTarget);
-      stop();
-    } else if (targetDegree == 0) {
-      Serial.print("lurus");
-      Serial.println(targetDegree);
-      forward(rPwm, lPwm);
-    }
+  } else if (direction < 0) {
+    right(rPwm, lPwm);
+    Serial.print("kanan");
+    Serial.println(targetDegree);
+    Serial.println(waktutPutarTarget);
+    delay(waktutPutarTarget);
+    stop();
+  } 
+  else if (targetDegree == 0 && direction == 0) {
+    Serial.print("lurus");
+    Serial.println(targetDegree);
+    forward(rPwm, lPwm);
   }
 
+  servoMapping.write(90);
+  float rangeMid = lidar1.readRangeSingleMillimeters();
+  delay(40);
+
+  while (rangeMid >= 400) {
+    forward(rPwm, lPwm);
+    rangeMid = lidar1.readRangeSingleMillimeters();
+    delay(40);
+  }
+
+  stop();
   scanState = true;
-
-}
-
-void decisionStop() {
-  float hcR =;
-  float hcM =;
-  float hcL =;
-
-  if (hcR)
 }
 
 void forward(float rPwm, int lPwm) {
